@@ -44,9 +44,15 @@ Finalmente, o último passo antes de rodar seu pacote é builda-lo. Para isso, r
 colcon build --packages-select py_pubsub
 ```
 
+depois dar source nos scripts de instalação
+
+```sh
+source install/setup.bash
+```
+
 Uma vez criado e buildado o pacote, para rodar basta usar o comando `run` do ros.
 
 ```sh
-ros2 run run NOME_DO_PACOTE NOME_DO_SCRIPT
+ros2 run NOME_DO_PACOTE NOME_DO_SCRIPT
 ```
 
