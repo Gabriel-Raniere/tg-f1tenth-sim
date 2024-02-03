@@ -24,11 +24,29 @@ ros2 launch f1tenth_gym_ros gym_bridge_launch.py
 
 Se todos os passos até aqui deram certo, o simulador deve estar rodando. Agora, basta usar um novo terminal do container para rodar os pacotes de controle. 
 
-## Rodando outros pacotes
+## Criando novos pacotes
 
-Para abrir um novo terminal no container será necessário rodar o commando 
+Pacotes criados para controlar o carrinho na simulação devem ser criados na pasta `packages`. Para criar um novo pacote, basta navegar até essa pasta e, no terminal do container, rodar o comando
 
 ```sh
-docker run -it tg_container
+ros2 pkg create --build-type ament_python NOME_DO_PACOTE
+```
+
+Para que o pacote funcione corretamente, devem ser instaladas as suas dependências usando o comando abaixo na pasta do seu pacote
+
+```sh
+rosdep install -i --from-path . --rosdistro humble -y
+```
+
+Finalmente, o último passo antes de rodar seu pacote é builda-lo. Para isso, rode o comando abaixo
+
+```sh
+colcon build --packages-select py_pubsub
+```
+
+Uma vez criado e buildado o pacote, para rodar basta usar o comando `run` do ros.
+
+```sh
+ros2 run run NOME_DO_PACOTE NOME_DO_SCRIPT
 ```
 
