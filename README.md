@@ -41,7 +41,7 @@ rosdep install -i --from-path . --rosdistro humble -y
 Finalmente, o último passo antes de rodar seu pacote é builda-lo. Para isso, rode o comando abaixo
 
 ```sh
-colcon build --packages-select py_pubsub
+colcon build --packages-select NOME_DO_PACOTE
 ```
 
 depois dar source nos scripts de instalação
