@@ -52,12 +52,8 @@ class EmergencyBrake(Node):
     info = {
       "curr_scan_ranges": np.array(curr_scan.ranges),
       "last_scan_ranges": np.array(self.last_scan.ranges),
-      "delta_ranges": [],
-      "ttc": []
-      
+      "ttc": [] 
     }
-    
-    info["delta_ranges"] = np.array(self.last_scan.ranges) - np.array(curr_scan.ranges)
    
     i = 0 
     angle_min = curr_scan.angle_min
