@@ -13,7 +13,9 @@ class EmergencyBrake(Node):
 
   #message variables
   last_odom: Odometry = None
-  last_scan: LaserScan = None
+  
+  #helpers
+  callCount: int = 0
 
 
   def __init__(self):
@@ -34,42 +36,41 @@ class EmergencyBrake(Node):
 
 
 
-  def scan_callback(self, msg):
-    # self.get_logger().info("1")
+  def scan_callback(self, msg: LaserScan):
+    self.calculate_ttc(msg)
     self.last_scan = msg
-    self.calculate_ttc()
 
   def odom_callback(self, msg):
-    # self.get_logger().info("2")
     self.last_odom = msg
-    self.calculate_ttc()
 
-  def calculate_ttc(self):
-    if self.last_scan == None or self.last_odom == None:
+  def calculate_ttc(self, curr_scan):
+    if self.last_odom == None:
       return
+    
+    speed_x = self.last_odom.twist.twist.linear.x or 1e-10
 
-    ranges: list[float] = self.last_scan.ranges
-    angleMin = self.last_scan.angle_min
-    angleMax = self.last_scan.angle_max
-    angleIncrement = self.last_scan.angle_increment
+    info = {
+      "curr_scan_ranges": np.array(curr_scan.ranges),
+      "last_scan_ranges": np.array(self.last_scan.ranges),
+      "delta_ranges": [],
+      "ttc": []
+      
+    }
+    
+    info["delta_ranges"] = np.array(self.last_scan.ranges) - np.array(curr_scan.ranges)
+   
+    i = 0 
+    angle_min = curr_scan.angle_min
+    angle_increment = curr_scan.angle_increment
+    while i < len(curr_scan.ranges):
+      speed_range_angle = i * angle_increment + angle_min
+      info["ttc"].append(curr_scan.ranges[i] / (speed_x * np.cos(speed_range_angle)))
+      i += 1
 
-    ttcInfoList = []
-    for index, range in enumerate(ranges):
-      currAngle = index * angleIncrement + angleMin
-      rangeX = np.cos(currAngle) * range
-      rangeY = np.sin(currAngle) * range
-      ttcInfo = {
-        "angle": currAngle,
-        "range": range,
-        "rangeX": np.cos(currAngle) * range,
-        "rangeY": np.sin(currAngle) * range,
-        "ttcX": rangeX/self.last_odom.twist.twist.linear.x,
-        "ttcY": rangeY/self.last_odom.twist.twist.linear.y
-      }
-
-      ttcInfoList.append(ttcInfo)
-
-    self.get_logger().info(str(ttcInfoList[len(ttcInfoList)//2]))
+    middle_index = len(info['delta_ranges'])//2
+    self.callCount += 1
+    if self.callCount % 10 == 0:
+      self.get_logger().info(str(info['ttc'][middle_index]))
 
 def main(args=None):
   rclpy.init(args=args)
