@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'wall-follower'
+package_name = 'wall_follower'
 
 setup(
     name=package_name,
@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'wall_follower = wall_follower.wall_follower:main'
         ],
     },
 )
