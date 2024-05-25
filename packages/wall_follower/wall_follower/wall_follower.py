@@ -46,9 +46,9 @@ class WallFollower(Node):
     self.last_odom = msg
     return 1
   
-  def get_range (self, scan: LaserScan, angle: float): 
-    desired_rad_angle = np.deg2rad(angle)
-    prossible_desired_angle = desired_rad_angle - (desired_rad_angle % scan.angle_increment)
+  def get_range_by_angle (self, scan: LaserScan, angle: float): 
+    # desired_rad_angle = np.deg2rad(angle)
+    prossible_desired_angle = angle - (angle % scan.angle_increment)
     
     desired_range_index = int((prossible_desired_angle - scan.angle_min) // scan.angle_increment)
     
@@ -56,12 +56,26 @@ class WallFollower(Node):
     
     return scan.ranges[desired_range_index]
     
+  def get_distance_to_wall(self):
+    a_angle = np.deg2rad(90)
+    b_angle = np.deg2rad(45)
+    
+    a_range = self.get_range_by_angle(self.last_laser, a_angle)
+    b_range = self.get_range_by_angle(self.last_laser, b_angle)
+    
+    theta = a_angle - b_angle
+    
+    alpha = np.arctan((a_range*np.cos(theta) - b_range)/(a_range*np.sin(theta)))
+    
+    return b_range*np.cos(alpha)
   
   def calculate_current_distance(self):
     if self.last_laser == None:
       return
+    
+    self.get_logger().info(str(self.get_distance_to_wall()))
       
-    self.get_logger().info(str(self.get_range(self.last_laser, 0)))
+    
     return 1
   
 
