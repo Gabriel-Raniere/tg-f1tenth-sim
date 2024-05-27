@@ -49,12 +49,8 @@ class WallFollower(Node):
     return 1
   
   def get_range_by_angle (self, scan: LaserScan, angle: float): 
-    # desired_rad_angle = np.deg2rad(angle)
     prossible_desired_angle = angle - (angle % scan.angle_increment)
-    
     desired_range_index = int((prossible_desired_angle - scan.angle_min) // scan.angle_increment)
-    
-    # self.get_logger().info(str(desired_range_index))
     
     return scan.ranges[desired_range_index]
     
