@@ -10,6 +10,7 @@ class WallFollower(Node):
   
   target_distance: float = 1.0 # target distance from wall in m
   current_distance: float = 0.0 # current distance from wall in m
+  current_angle: float = 0.0 # current angle between car and wall
   
   #helpers
   last_laser: LaserScan
@@ -39,6 +40,7 @@ class WallFollower(Node):
   
   def scan_callback(self, msg):
     self.last_laser = msg
+    self.set_current_distance_and_angle()
     self.calculate_current_distance()
     return 1
   
@@ -56,7 +58,7 @@ class WallFollower(Node):
     
     return scan.ranges[desired_range_index]
     
-  def get_distance_to_wall(self):
+  def set_current_distance_and_angle(self):
     a_angle = np.deg2rad(90)
     b_angle = np.deg2rad(45)
     
@@ -65,15 +67,16 @@ class WallFollower(Node):
     
     theta = a_angle - b_angle
     
-    alpha = np.arctan((a_range*np.cos(theta) - b_range)/(a_range*np.sin(theta)))
+    alpha = np.arctan((b_range*np.cos(theta)-a_range)/(b_range*np.sin(theta)))
     
-    return b_range*np.cos(alpha)
+    self.current_angle = alpha
+    self.current_distance = b_range*np.cos(alpha)
   
   def calculate_current_distance(self):
     if self.last_laser == None:
       return
     
-    self.get_logger().info(str(self.get_distance_to_wall()))
+    # self.get_logger().info(str(np.rad2deg(self.current_angle)))
       
     
     return 1
