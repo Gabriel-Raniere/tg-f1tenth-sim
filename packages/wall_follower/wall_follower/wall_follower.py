@@ -11,10 +11,12 @@ class WallFollower(Node):
   target_distance: float = 1.0 # target distance from wall in m
   current_distance: float = 0.0 # current distance from wall in m
   current_angle: float = 0.0 # current angle between car and wall
+  predicted_distance: float = 0.0 # predicted distance from wall in m
   
   #helpers
-  last_laser: LaserScan
-  last_odom: Odometry
+  last_laser: LaserScan = None
+  last_odom: Odometry = None
+  last_steering_angle: float = 0.0
   
   def __init__(self):
     super().__init__('wall_follower')
@@ -41,7 +43,8 @@ class WallFollower(Node):
   def scan_callback(self, msg):
     self.last_laser = msg
     self.set_current_distance_and_angle()
-    self.calculate_current_distance()
+    self.set_predicted_distace(0.5)
+    self.pid()
     return 1
   
   def odom_callback(self, msg):
@@ -67,7 +70,45 @@ class WallFollower(Node):
     
     self.current_angle = alpha
     self.current_distance = b_range*np.cos(alpha)
+    
+  def set_predicted_distace(self, dt):
+    if self.last_odom == None:
+      return
+    
+    current_speed = self.last_odom.twist.twist.linear.x
+    self.predicted_distance = self.current_distance + dt*current_speed*np.sin(self.current_angle)      
   
+  def pid(self):
+    if self.last_odom == None:
+      return
+    # current_speed = self.last_odom.twist.twist.linear.x
+    error = self.target_distance - self.predicted_distance
+    # self.get_logger().info("calculate error: " + str(error))
+    
+    kp = -0.15
+    steering_angle = kp * error
+    steering_angle_deg = np.rad2deg(steering_angle)
+    self.get_logger().info("steering angle (deg): " + str(steering_angle_deg))
+    if abs(steering_angle_deg) < 10:
+      self.set_speed(1.5)
+    elif (abs(steering_angle_deg) < 20):
+      self.set_speed(1.0)
+    else:
+      self.set_speed(0.5)
+    
+    if abs(self.last_steering_angle - steering_angle) > 0.05:
+      self.set_steering_angle(steering_angle)
+    
+  def set_speed(self, speed):
+    ackerman_msg = AckermannDriveStamped()
+    ackerman_msg.drive.speed = speed
+    self.ackerman_publisher.publish(ackerman_msg)
+  
+  def set_steering_angle(self, angle):
+    ackerman_msg = AckermannDriveStamped()
+    ackerman_msg.drive.steering_angle = angle
+    self.ackerman_publisher.publish(ackerman_msg)
+    
   def calculate_current_distance(self):
     if self.last_laser == None:
       return
