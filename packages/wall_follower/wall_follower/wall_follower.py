@@ -5,6 +5,7 @@ from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry
 from ackermann_msgs.msg import AckermannDriveStamped
 import numpy as np
+import time
 
 class WallFollower(Node):
   
@@ -17,6 +18,10 @@ class WallFollower(Node):
   last_laser: LaserScan = None
   last_odom: Odometry = None
   last_steering_angle: float = 0.0
+  dt: float = 0.0
+  integral: float = 0.0
+  time = time.time()
+  previous_time = time.time()
   
   def __init__(self):
     super().__init__('wall_follower')
@@ -43,7 +48,7 @@ class WallFollower(Node):
   def scan_callback(self, msg):
     self.last_laser = msg
     self.set_current_distance_and_angle()
-    self.set_predicted_distace(0.5)
+    self.set_predicted_distace(self.dt)
     self.pid()
     return 1
   
@@ -72,7 +77,7 @@ class WallFollower(Node):
     self.current_distance = b_range*np.cos(alpha)
     
   def set_predicted_distace(self, dt):
-    if self.last_odom == None:
+    if self.last_odom == None or dt == 0:
       return
     
     current_speed = self.last_odom.twist.twist.linear.x
@@ -82,22 +87,26 @@ class WallFollower(Node):
     if self.last_odom == None:
       return
     # current_speed = self.last_odom.twist.twist.linear.x
-    error = self.target_distance - self.predicted_distance
+    predicted_error = self.target_distance - self.predicted_distance
+    current_error = self.target_distance - self.current_distance
+    
     # self.get_logger().info("calculate error: " + str(error))
     
     kp = -0.15
-    steering_angle = kp * error
-    steering_angle_deg = np.rad2deg(steering_angle)
-    self.get_logger().info("steering angle (deg): " + str(steering_angle_deg))
-    if abs(steering_angle_deg) < 10:
-      self.set_speed(1.5)
-    elif (abs(steering_angle_deg) < 20):
-      self.set_speed(1.0)
-    else:
-      self.set_speed(0.5)
+    ki = 0.0
+    kd = 0.0
     
-    if abs(self.last_steering_angle - steering_angle) > 0.05:
-      self.set_steering_angle(steering_angle)
+    proportional = kp * error
+    self.integral += ki * error * self.dt
+    derivative = kd * (predicted_error - current_error)/self.dt
+    
+    self.previous_time = self.time
+    self.time = time.time()
+    self.dt = self.previous_time - self.time
+    
+    desired_steering_angle = proportional + self.integral + derivative
+    print('desired_steering_angle', desired_steering_angle)
+    self.set_steering_angle(desired_steering_angle)
     
   def set_speed(self, speed):
     ackerman_msg = AckermannDriveStamped()
