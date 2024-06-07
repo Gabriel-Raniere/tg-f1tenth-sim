@@ -9,7 +9,7 @@ import time
 
 class WallFollower(Node):
   
-  target_distance: float = 1.0 # target distance from wall in m
+  target_distance: float = 1 # target distance from wall in m
   current_distance: float = 0.0 # current distance from wall in m
   current_angle: float = 0.0 # current angle between car and wall
   predicted_distance: float = 0.0 # predicted distance from wall in m
@@ -20,7 +20,7 @@ class WallFollower(Node):
   last_steering_angle: float = 0.0
   dt: float = 0.0
   integral: float = 0.0
-  time = time.time()
+  current_time = time.time()
   previous_time = time.time()
   
   def __init__(self):
@@ -49,6 +49,12 @@ class WallFollower(Node):
     self.last_laser = msg
     self.set_current_distance_and_angle()
     self.set_predicted_distace(self.dt)
+    print('predicted distance', self.predicted_distance)
+    
+    self.previous_time = self.current_time
+    self.current_time = time.time()
+    self.dt = self.previous_time - self.current_time
+    
     self.pid()
     return 1
   
@@ -63,7 +69,7 @@ class WallFollower(Node):
     return scan.ranges[desired_range_index]
     
   def set_current_distance_and_angle(self):
-    a_angle = np.deg2rad(90)
+    a_angle = np.deg2rad(70)
     b_angle = np.deg2rad(45)
     
     a_range = self.get_range_by_angle(self.last_laser, a_angle)
@@ -92,20 +98,29 @@ class WallFollower(Node):
     
     # self.get_logger().info("calculate error: " + str(error))
     
-    kp = -0.15
+    kp = -0.5
     ki = 0.0
     kd = 0.0
     
-    proportional = kp * error
-    self.integral += ki * error * self.dt
+    proportional = kp * current_error
+    self.integral += ki * current_error * self.dt
     derivative = kd * (predicted_error - current_error)/self.dt
     
-    self.previous_time = self.time
-    self.time = time.time()
-    self.dt = self.previous_time - self.time
-    
     desired_steering_angle = proportional + self.integral + derivative
-    print('desired_steering_angle', desired_steering_angle)
+    desired_steering_angle_deg = np.rad2deg(desired_steering_angle)
+    
+    # print('desired_steering_angle_deg [deg]', desired_steering_angle_deg)
+    
+    f = open("test.txt", "a")
+    f.write(str(desired_steering_angle_deg))
+    f.close()
+    
+    if abs(desired_steering_angle_deg) < 10:
+      self.set_speed(6.0)
+    elif abs(desired_steering_angle_deg) < 20:
+      self.set_speed(4.0)
+    else:
+      self.set_speed(3.0)
     self.set_steering_angle(desired_steering_angle)
     
   def set_speed(self, speed):
