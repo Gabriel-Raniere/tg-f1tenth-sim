@@ -98,8 +98,11 @@ class WallFollower(Node):
     
     # self.get_logger().info("calculate error: " + str(error))
     
-    kp = -0.5
-    ki = 0.0
+    k_max = -1
+    f_o = 0.0001
+    
+    kp = k_max*0.45
+    ki = 1.2*f_o
     kd = 0.0
     
     proportional = kp * current_error
@@ -109,7 +112,7 @@ class WallFollower(Node):
     desired_steering_angle = proportional + self.integral + derivative
     desired_steering_angle_deg = np.rad2deg(desired_steering_angle)
     
-    # print('desired_steering_angle_deg [deg]', desired_steering_angle_deg)
+    print('desired_steering_angle_deg [deg]', desired_steering_angle_deg)
     
     f = open("test.txt", "a")
     f.write(str(desired_steering_angle_deg))
