@@ -101,9 +101,9 @@ class WallFollower(Node):
     k_max = -1
     f_o = 0.0001
     
-    kp = k_max*0.45
-    ki = 1.2*f_o
-    kd = 0.0
+    kp = k_max*0.6
+    ki = 2*f_o
+    kd = 0.125*f_o
     
     proportional = kp * current_error
     self.integral += ki * current_error * self.dt
