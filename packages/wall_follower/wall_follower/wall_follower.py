@@ -9,7 +9,7 @@ import time
 
 class WallFollower(Node):
   
-  target_distance: float = 1 # target distance from wall in m
+  target_distance: float = 1.0 # target distance from wall in m
   current_distance: float = 0.0 # current distance from wall in m
   current_angle: float = 0.0 # current angle between car and wall
   predicted_distance: float = 0.0 # predicted distance from wall in m
@@ -22,6 +22,8 @@ class WallFollower(Node):
   integral: float = 0.0
   current_time = time.time()
   previous_time = time.time()
+  
+  counter = 0
   
   def __init__(self):
     super().__init__('wall_follower')
@@ -49,7 +51,7 @@ class WallFollower(Node):
     self.last_laser = msg
     self.set_current_distance_and_angle()
     self.set_predicted_distace(self.dt)
-    print('predicted distance', self.predicted_distance)
+    # print('predicted distance', self.predicted_distance)
     
     self.previous_time = self.current_time
     self.current_time = time.time()
@@ -110,21 +112,9 @@ class WallFollower(Node):
     derivative = kd * (predicted_error - current_error)/self.dt
     
     desired_steering_angle = proportional + self.integral + derivative
-    desired_steering_angle_deg = np.rad2deg(desired_steering_angle)
     
-    print('desired_steering_angle_deg [deg]', desired_steering_angle_deg)
-    
-    f = open("test.txt", "a")
-    f.write(str(desired_steering_angle_deg))
-    f.close()
-    
-    if abs(desired_steering_angle_deg) < 10:
-      self.set_speed(6.0)
-    elif abs(desired_steering_angle_deg) < 20:
-      self.set_speed(4.0)
-    else:
-      self.set_speed(3.0)
     self.set_steering_angle(desired_steering_angle)
+    self.counter = 0
     
   def set_speed(self, speed):
     ackerman_msg = AckermannDriveStamped()
@@ -132,7 +122,18 @@ class WallFollower(Node):
     self.ackerman_publisher.publish(ackerman_msg)
   
   def set_steering_angle(self, angle):
+    desired_steering_angle_deg = np.rad2deg(angle)
+    
+    
+    if abs(desired_steering_angle_deg) < 10:
+      speed = 1.5
+    elif abs(desired_steering_angle_deg) < 20:
+      speed = 1.0
+    else:
+      speed = 0.5
+    
     ackerman_msg = AckermannDriveStamped()
+    ackerman_msg.drive.speed = speed
     ackerman_msg.drive.steering_angle = angle
     self.ackerman_publisher.publish(ackerman_msg)
     
